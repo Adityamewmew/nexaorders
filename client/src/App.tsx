@@ -57,13 +57,19 @@ function TokenVerifier() {
     if (!token || !isAuthenticated) return;
 
     api.get('/auth/me').then(res => {
-      // Token masih valid — update user data terbaru
       dispatch(loginSuccess({ user: res.data, token }));
     }).catch(() => {
-      // Token expired atau invalid — logout
       dispatch(logout());
     });
   }, []); // eslint-disable-line react-hooks/exhaustive-deps
+
+  // Keep-alive: ping backend setiap 4 menit agar tidak cold start
+  useEffect(() => {
+    const ping = () => fetch(`${import.meta.env.VITE_API_URL?.replace('/api', '')}/api/health`).catch(() => {});
+    ping(); // ping langsung saat load
+    const interval = setInterval(ping, 4 * 60 * 1000);
+    return () => clearInterval(interval);
+  }, []);
 
   return null;
 }
