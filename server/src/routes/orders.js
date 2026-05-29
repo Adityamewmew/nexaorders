@@ -1,10 +1,25 @@
 const express = require('express')
 const prisma = require('../db')
 const { authMiddleware } = require('../middleware/auth')
+const { sendPushToOrder } = require('./push')
 
 const router = express.Router()
 
 const VALID_ORDER_STATUSES = ['PENDING', 'PROCESS', 'DONE']
+
+// Pesan notifikasi per status
+const PUSH_MESSAGES = {
+  PROCESS: {
+    title: '🍳 Pesanan Sedang Dimasak!',
+    body: 'Pesananmu sedang diproses oleh dapur. Mohon tunggu sebentar ya!',
+    icon: '/favicon.svg',
+  },
+  DONE: {
+    title: '✅ Pesanan Siap!',
+    body: 'Pesananmu sudah siap! Silakan ambil atau tunggu pelayan mengantar.',
+    icon: '/favicon.svg',
+  },
+}
 
 // P3: Validasi transisi status yang diizinkan
 const VALID_TRANSITIONS = {
@@ -135,6 +150,17 @@ router.patch('/:id/status', authMiddleware, async (req, res) => {
     }
 
     const order = await prisma.order.update({ where: { id }, data: { status } })
+
+    // Kirim push notification ke customer jika ada pesan untuk status ini
+    if (PUSH_MESSAGES[status]) {
+      sendPushToOrder(id, {
+        ...PUSH_MESSAGES[status],
+        orderId: id,
+        status,
+        url: `/m/1/${order.tableId}/status/${id}`,
+      }).catch(() => {}) // silent fail — jangan ganggu response
+    }
+
     res.json(order)
   } catch (e) {
     if (e.code === 'P2025') return res.status(404).json({ error: 'Pesanan tidak ditemukan' })

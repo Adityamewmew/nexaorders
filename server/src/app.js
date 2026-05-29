@@ -15,6 +15,7 @@ const paymentRoutes = require('./routes/payments')
 const userRoutes = require('./routes/users')
 const dashboardRoutes = require('./routes/dashboard')
 const uploadRoutes = require('./routes/upload')
+const { router: pushRoutes } = require('./routes/push')
 
 const app = express()
 
@@ -61,6 +62,7 @@ app.use('/api/payments', paymentRoutes)
 app.use('/api/users', userRoutes)
 app.use('/api/dashboard', dashboardRoutes)
 app.use('/api/upload', uploadRoutes)
+app.use('/api/push', pushRoutes)
 
 // Health check
 app.get('/api/health', (req, res) => res.json({ status: 'ok', time: new Date().toISOString() }))
