@@ -1,42 +1,45 @@
 import { BrowserRouter, Routes, Route, Navigate, Link } from "react-router-dom";
 import { useSelector, useDispatch } from "react-redux";
-import { useEffect } from "react";
+import { useEffect, Suspense, lazy } from "react";
 import { RootState } from "@/store";
 import { loginSuccess, logout } from "@/features/auth/authSlice";
 import api from "@/lib/api";
 
-// Auth
+// Auth & Layout — load langsung (dibutuhkan segera)
 import MerchantLogin from "@/features/merchant/MerchantLogin";
 import ProtectedRoute from "@/components/ProtectedRoute";
-
-// Platform (Superadmin)
-import PlatformLayout from "@/layouts/PlatformLayout";
-import PlatformLogin from "@/features/platform/PlatformLogin";
-import PlatformDashboard from "@/features/platform/PlatformDashboard";
-import PlatformTenants from "@/features/platform/PlatformTenants";
-
-// Merchant Layout
 import MerchantLayout from "@/layouts/MerchantLayout";
-
-// Merchant pages (dikerjakan Ravi)
-import MerchantDashboard from "@/features/merchant/MerchantDashboard";
-import PointOfSale from "@/features/merchant/pos/PointOfSale";
-import OrderList from "@/features/merchant/orders/OrderList";
-import MenuList from "@/features/merchant/menu/MenuList";
-import MenuForm from "@/features/merchant/menu/MenuForm";
-import TableList from "@/features/merchant/tables/TableList";
-import TableForm from "@/features/merchant/tables/TableForm";
-import StaffList from "@/features/merchant/staff/StaffList";
-import StaffForm from "@/features/merchant/staff/StaffForm";
-import SalesReport from "@/features/merchant/reports/SalesReport";
-import MerchantProfile from "@/features/merchant/profile/MerchantProfile";
-
-// Customer (dikerjakan Aditya)
 import CustomerLayout from "@/features/customer/layouts/CustomerLayout";
-import MenuCatalogPage from "@/features/customer/pages/MenuCatalogPage";
-import CartPage from "@/features/customer/pages/CartPage";
-import CheckoutPage from "@/features/customer/pages/CheckoutPage";
-import OrderStatusPage from "@/features/customer/pages/OrderStatusPage";
+
+// Lazy load semua halaman — hanya load saat dibutuhkan
+const PlatformLayout = lazy(() => import("@/layouts/PlatformLayout"));
+const PlatformLogin = lazy(() => import("@/features/platform/PlatformLogin"));
+const PlatformDashboard = lazy(() => import("@/features/platform/PlatformDashboard"));
+const PlatformTenants = lazy(() => import("@/features/platform/PlatformTenants"));
+
+const MerchantDashboard = lazy(() => import("@/features/merchant/MerchantDashboard"));
+const PointOfSale = lazy(() => import("@/features/merchant/pos/PointOfSale"));
+const OrderList = lazy(() => import("@/features/merchant/orders/OrderList"));
+const MenuList = lazy(() => import("@/features/merchant/menu/MenuList"));
+const MenuForm = lazy(() => import("@/features/merchant/menu/MenuForm"));
+const TableList = lazy(() => import("@/features/merchant/tables/TableList"));
+const TableForm = lazy(() => import("@/features/merchant/tables/TableForm"));
+const StaffList = lazy(() => import("@/features/merchant/staff/StaffList"));
+const StaffForm = lazy(() => import("@/features/merchant/staff/StaffForm"));
+const SalesReport = lazy(() => import("@/features/merchant/reports/SalesReport"));
+const MerchantProfile = lazy(() => import("@/features/merchant/profile/MerchantProfile"));
+
+const MenuCatalogPage = lazy(() => import("@/features/customer/pages/MenuCatalogPage"));
+const CartPage = lazy(() => import("@/features/customer/pages/CartPage"));
+const CheckoutPage = lazy(() => import("@/features/customer/pages/CheckoutPage"));
+const OrderStatusPage = lazy(() => import("@/features/customer/pages/OrderStatusPage"));
+
+// Loading fallback
+const PageLoader = () => (
+  <div className="min-h-screen flex items-center justify-center bg-brand-background">
+    <div className="w-8 h-8 border-4 border-brand-primary border-t-transparent rounded-full animate-spin" />
+  </div>
+);
 
 const MerchantIndexRedirect = () => {
   const { user } = useSelector((state: RootState) => state.auth);
@@ -69,6 +72,7 @@ function App() {
   return (
     <BrowserRouter future={{ v7_relativeSplatPath: true, v7_startTransition: true }}>
       <TokenVerifier />
+      <Suspense fallback={<PageLoader />}>
       <Routes>
         {/* Home */}
         <Route path="/" element={
@@ -146,6 +150,7 @@ function App() {
           <Route path="status/:orderId" element={<OrderStatusPage />} />
         </Route>
       </Routes>
+      </Suspense>
     </BrowserRouter>
   );
 }

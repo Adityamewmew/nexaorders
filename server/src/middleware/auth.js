@@ -1,22 +1,16 @@
 const jwt = require('jsonwebtoken')
-const prisma = require('../db')
 
-async function authMiddleware(req, res, next) {
+// Catatan: Tidak query DB per-request untuk performa.
+// Status akun dicek saat login. Token expire dalam 8 jam.
+// Jika akun di-nonaktifkan, kasir masih bisa akses sampai token expire (max 8 jam).
+// Trade-off yang acceptable untuk performa.
+
+function authMiddleware(req, res, next) {
   const token = req.headers.authorization?.split(' ')[1]
   if (!token) return res.status(401).json({ error: 'Token required' })
 
   try {
     const decoded = jwt.verify(token, process.env.JWT_SECRET)
-
-    // P2: Validasi status akun per-request (bukan hanya saat login)
-    const user = await prisma.user.findUnique({
-      where: { id: decoded.id },
-      select: { id: true, status: true, role: true }
-    })
-    if (!user || user.status === 'nonaktif') {
-      return res.status(401).json({ error: 'Akun tidak aktif atau tidak ditemukan' })
-    }
-
     req.user = decoded
     next()
   } catch (e) {
