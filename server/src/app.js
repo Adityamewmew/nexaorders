@@ -65,7 +65,7 @@ app.use('/api/upload', uploadRoutes)
 // Health check
 app.get('/api/health', (req, res) => res.json({ status: 'ok', time: new Date().toISOString() }))
 
-// Global error handler — jangan bocorkan detail error ke client
+// Global error handler
 app.use((err, req, res, _next) => {
   console.error('[ERROR]', err.message)
   if (err.message === 'Origin tidak diizinkan oleh CORS') {
@@ -74,5 +74,11 @@ app.use((err, req, res, _next) => {
   res.status(500).json({ error: 'Terjadi kesalahan server' })
 })
 
-const PORT = process.env.PORT || 5000
-app.listen(PORT, () => console.log(`Server running on port ${PORT}`))
+// Export app untuk Vercel serverless
+module.exports = app
+
+// Jalankan server hanya jika dieksekusi langsung (bukan di-import)
+if (require.main === module) {
+  const PORT = process.env.PORT || 5000
+  app.listen(PORT, () => console.log(`Server running on port ${PORT}`))
+}
