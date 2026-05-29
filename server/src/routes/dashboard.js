@@ -29,7 +29,7 @@ router.get('/', authMiddleware, async (req, res) => {
       penjualanHariIni: penjualanHariIni._sum.total || 0
     })
   } catch (e) {
-    res.status(500).json({ error: e.message })
+    res.status(500).json({ error: 'Terjadi kesalahan server' })
   }
 })
 
@@ -41,9 +41,14 @@ router.get('/sales', authMiddleware, async (req, res) => {
 
     if (startDate || endDate) {
       where.createdAt = {}
-      if (startDate) where.createdAt.gte = new Date(startDate)
+      if (startDate) {
+        const start = new Date(startDate)
+        if (isNaN(start.getTime())) return res.status(400).json({ error: 'startDate tidak valid' })
+        where.createdAt.gte = start
+      }
       if (endDate) {
         const end = new Date(endDate)
+        if (isNaN(end.getTime())) return res.status(400).json({ error: 'endDate tidak valid' })
         end.setHours(23, 59, 59, 999)
         where.createdAt.lte = end
       }
@@ -71,7 +76,7 @@ router.get('/sales', authMiddleware, async (req, res) => {
       summary: { totalPendapatan, totalTransaksi, totalItemTerjual }
     })
   } catch (e) {
-    res.status(500).json({ error: e.message })
+    res.status(500).json({ error: 'Terjadi kesalahan server' })
   }
 })
 

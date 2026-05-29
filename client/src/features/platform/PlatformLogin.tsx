@@ -127,9 +127,7 @@ export default function PlatformLogin() {
           </form>
 
           <div className="mt-8 pt-6 border-t border-slate-100 text-center text-sm text-slate-500">
-            <p className="mb-2 font-semibold text-slate-700">Info Akun</p>
-            <p className="mb-1">Email: <span className="font-bold text-[#0B3B60]">admin@nexaorder.com</span></p>
-            <p>Password: <span className="font-bold text-slate-700">admin123</span></p>
+            <p>Gunakan akun superadmin yang sudah didaftarkan oleh sistem.</p>
           </div>
         </div>
       </div>

@@ -1,6 +1,9 @@
 import { BrowserRouter, Routes, Route, Navigate, Link } from "react-router-dom";
-import { useSelector } from "react-redux";
+import { useSelector, useDispatch } from "react-redux";
+import { useEffect } from "react";
 import { RootState } from "@/store";
+import { loginSuccess, logout } from "@/features/auth/authSlice";
+import api from "@/lib/api";
 
 // Auth
 import MerchantLogin from "@/features/merchant/MerchantLogin";
@@ -41,9 +44,31 @@ const MerchantIndexRedirect = () => {
   return <Navigate to="/merchant/dashboard" replace />;
 };
 
+// P3: Verifikasi token saat app pertama kali load
+function TokenVerifier() {
+  const dispatch = useDispatch();
+  const { isAuthenticated } = useSelector((state: RootState) => state.auth);
+
+  useEffect(() => {
+    const token = localStorage.getItem('nexa_token');
+    if (!token || !isAuthenticated) return;
+
+    api.get('/auth/me').then(res => {
+      // Token masih valid — update user data terbaru
+      dispatch(loginSuccess({ user: res.data, token }));
+    }).catch(() => {
+      // Token expired atau invalid — logout
+      dispatch(logout());
+    });
+  }, []); // eslint-disable-line react-hooks/exhaustive-deps
+
+  return null;
+}
+
 function App() {
   return (
     <BrowserRouter future={{ v7_relativeSplatPath: true, v7_startTransition: true }}>
+      <TokenVerifier />
       <Routes>
         {/* Home */}
         <Route path="/" element={

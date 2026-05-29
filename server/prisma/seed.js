@@ -9,7 +9,8 @@ const adapter = new PrismaPg(pool)
 const prisma = new PrismaClient({ adapter })
 
 async function main() {
-  const hashedPassword = await bcrypt.hash('admin123', 10)
+  const initialPassword = process.env.SEED_ADMIN_PASSWORD || 'ChangeMe123!'
+  const hashedPassword = await bcrypt.hash(initialPassword, 10)
 
   // Superadmin platform
   await prisma.user.upsert({
@@ -50,6 +51,8 @@ async function main() {
   }
 
   console.log('Seed selesai: superadmin + merchant admin + 3 kategori')
+  // Password tidak dicetak ke console untuk keamanan
+  // Gunakan SEED_ADMIN_PASSWORD di .env untuk mengatur password awal
 }
 
 main()

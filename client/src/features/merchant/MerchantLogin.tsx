@@ -135,9 +135,7 @@ export default function MerchantLogin() {
           </form>
 
           <div className="mt-8 pt-6 border-t border-slate-100 text-center text-sm text-slate-500">
-            <p className="mb-2 font-semibold text-slate-700">Info Akun</p>
-            <p className="mb-1">Admin: <span className="font-bold text-brand-primary">arifin@bakso.com</span></p>
-            <p>Password: <span className="font-bold text-slate-700">admin123</span></p>
+            <p>Gunakan akun merchant yang sudah didaftarkan oleh admin.</p>
           </div>
         </div>
       </div>

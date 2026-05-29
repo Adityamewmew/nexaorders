@@ -1,10 +1,10 @@
 import { useState, useEffect } from "react";
 import { Outlet, Link, useLocation, useNavigate } from "react-router-dom";
 import { useDispatch, useSelector } from "react-redux";
-import { 
-  LayoutDashboard, ClipboardList, Package, 
-  RectangleHorizontal, Users, BarChart3, 
-  LogOut, Menu, X, Store, User 
+import {
+  LayoutDashboard, ClipboardList, Package,
+  RectangleHorizontal, Users, BarChart3,
+  LogOut, Menu, X, Store, User
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { logout } from "@/features/auth/authSlice";
@@ -23,6 +23,7 @@ export default function MerchantLayout() {
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
   const [showProfileDropdown, setShowProfileDropdown] = useState(false);
   const [isLogoutModalOpen, setIsLogoutModalOpen] = useState(false);
+  const apiBaseUrl = import.meta.env.VITE_API_URL || "http://localhost:5000/api";
 
   // Poll pesanan PENDING setiap 15 detik untuk badge notifikasi real-time
   useEffect(() => {
@@ -48,7 +49,7 @@ export default function MerchantLayout() {
       try {
         const token = localStorage.getItem('nexa_token');
         if (!token) return;
-        const res = await fetch('http://localhost:5000/api/orders?status=PENDING', {
+        const res = await fetch(`${apiBaseUrl}/orders?status=PENDING`, {
           headers: { Authorization: `Bearer ${token}` }
         });
         if (res.ok) {
@@ -62,7 +63,7 @@ export default function MerchantLayout() {
     fetchPendingCount();
     const interval = setInterval(fetchPendingCount, 15000);
     return () => clearInterval(interval);
-  }, [dispatch]);
+  }, [apiBaseUrl, dispatch]);
 
   // Menu Khusus Merchant Admin
   const adminMenu = [
@@ -146,11 +147,11 @@ export default function MerchantLayout() {
 
       {/* User Profile Block */}
       <div className="p-4 mt-auto border-t border-white/10 relative">
-        
+
         {/* Transparent Overlay for click outside */}
         {showProfileDropdown && (
-          <div 
-            className="fixed inset-0 z-40" 
+          <div
+            className="fixed inset-0 z-40"
             onClick={() => setShowProfileDropdown(false)}
           />
         )}
@@ -158,7 +159,7 @@ export default function MerchantLayout() {
         {/* Dropdown Menu */}
         {showProfileDropdown && (
           <div className="absolute bottom-full left-4 right-4 mb-2 bg-white rounded-xl shadow-lg py-2 border border-slate-100 z-50 animate-in fade-in slide-in-from-bottom-2">
-            <Link 
+            <Link
               to="/merchant/profile"
               onClick={() => {
                 setShowProfileDropdown(false);
@@ -169,7 +170,7 @@ export default function MerchantLayout() {
               <User className="w-4 h-4" />
               Pengaturan Profil
             </Link>
-            <button 
+            <button
               onClick={openLogoutModal}
               className="w-full flex items-center gap-3 px-4 py-3 text-sm font-bold text-red-600 hover:bg-red-50 transition-colors"
             >
@@ -179,7 +180,7 @@ export default function MerchantLayout() {
           </div>
         )}
 
-        <button 
+        <button
           onClick={() => setShowProfileDropdown(!showProfileDropdown)}
           className="flex items-center gap-3 w-full p-3 rounded-xl hover:bg-white/10 transition-colors text-left"
         >
@@ -204,7 +205,7 @@ export default function MerchantLayout() {
 
       {/* Overlay Mobile */}
       {isMobileMenuOpen && (
-        <div 
+        <div
           className="fixed inset-0 bg-black/50 z-40 md:hidden transition-opacity"
           onClick={() => setIsMobileMenuOpen(false)}
         />
@@ -228,7 +229,7 @@ export default function MerchantLayout() {
         {/* Topbar */}
         <header className="h-16 bg-white border-b flex items-center justify-between md:justify-start px-4 md:px-8 shadow-sm z-10 shrink-0">
           <div className="flex items-center gap-4">
-            <button 
+            <button
               className="md:hidden p-2 -ml-2 text-slate-600 hover:bg-slate-100 rounded-lg transition-colors"
               onClick={() => setIsMobileMenuOpen(true)}
             >
@@ -238,7 +239,7 @@ export default function MerchantLayout() {
               {navItems.find((i) => location.pathname.includes(i.path))?.name || "Merchant Portal"}
             </h2>
           </div>
-          
+
           {/* Logo khusus mobile */}
           <div className="md:hidden font-bold text-brand-primary flex items-center gap-2">
             <Store className="w-5 h-5" />

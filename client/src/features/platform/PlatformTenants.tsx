@@ -23,7 +23,7 @@ export default function PlatformTenants() {
     name: "",
     username: "",
     email: "",
-    password: "admin123",
+    password: "",
   });
 
   const fetchMerchants = async () => {
@@ -59,7 +59,7 @@ export default function PlatformTenants() {
       });
       await fetchMerchants();
       setIsModalOpen(false);
-      setFormData({ name: "", username: "", email: "", password: "admin123" });
+      setFormData({ name: "", username: "", email: "", password: "" });
     } catch (err: unknown) {
       const error = err as { response?: { data?: { error?: string } } };
       alert(error.response?.data?.error || "Gagal menambah merchant");

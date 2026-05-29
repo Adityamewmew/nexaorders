@@ -11,7 +11,7 @@ export default function PlatformLayout() {
   const navigate = useNavigate();
   const dispatch = useDispatch();
   const { user } = useSelector((state: RootState) => state.auth);
-  
+
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
 
   const navItems = [
@@ -60,14 +60,14 @@ export default function PlatformLayout() {
       </nav>
 
       <div className="p-4 border-t border-white/10">
-        <button 
+        <button
           onClick={handleLogout}
           className="flex items-center gap-3 px-4 py-3 w-full text-left text-white/80 hover:bg-white/10 hover:text-white rounded-xl transition-colors"
         >
           <LogOut className="w-5 h-5 shrink-0" />
           <span className="truncate">Keluar</span>
         </button>
-        
+
         <div className="mt-4 flex items-center gap-3 px-2">
           <div className="w-10 h-10 bg-brand-secondary rounded-full flex items-center justify-center text-white font-bold shrink-0 shadow-sm">
             {user?.name?.charAt(0) || "SA"}
@@ -90,7 +90,7 @@ export default function PlatformLayout() {
 
       {/* Overlay Mobile */}
       {isMobileMenuOpen && (
-        <div 
+        <div
           className="fixed inset-0 bg-black/50 z-40 md:hidden transition-opacity"
           onClick={() => setIsMobileMenuOpen(false)}
         />
@@ -114,7 +114,7 @@ export default function PlatformLayout() {
         {/* Topbar (Terlihat jelas di Mobile, opsional di Desktop) */}
         <header className="h-16 bg-white border-b flex items-center justify-between md:justify-start px-4 md:px-8 shadow-sm z-10 shrink-0">
           <div className="flex items-center gap-4">
-            <button 
+            <button
               className="md:hidden p-2 -ml-2 text-slate-600 hover:bg-slate-100 rounded-lg transition-colors"
               onClick={() => setIsMobileMenuOpen(true)}
             >
@@ -124,11 +124,11 @@ export default function PlatformLayout() {
               {navItems.find((i) => location.pathname.includes(i.path))?.name || "Platform Admin"}
             </h2>
           </div>
-          
+
           {/* Teks logo khusus mobile di topbar */}
           <div className="sm:hidden font-bold text-brand-primary flex items-center gap-2">
-             <div className="w-6 h-6 bg-brand-primary rounded-full flex items-center justify-center text-white text-xs">N</div>
-             NEXA
+            <div className="w-6 h-6 bg-brand-primary rounded-full flex items-center justify-center text-white text-xs">N</div>
+            NEXA
           </div>
         </header>
 
