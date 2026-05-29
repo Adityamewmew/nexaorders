@@ -16,6 +16,38 @@ router.get('/vapid-public-key', (req, res) => {
   res.json({ publicKey: process.env.VAPID_PUBLIC_KEY })
 })
 
+// GET /api/push/debug-subs — lihat semua subscription (debug only)
+router.get('/debug-subs', async (req, res) => {
+  try {
+    const subs = await prisma.pushSubscription.findMany({
+      select: { id: true, orderId: true, createdAt: true, endpoint: true }
+    })
+    res.json({
+      count: subs.length,
+      subs: subs.map(s => ({ id: s.id, orderId: s.orderId, createdAt: s.createdAt, endpoint: s.endpoint.substring(0, 50) + '...' }))
+    })
+  } catch (e) {
+    res.status(500).json({ error: e.message })
+  }
+})
+
+// POST /api/push/test — kirim test notifikasi ke orderId tertentu
+router.post('/test', async (req, res) => {
+  try {
+    const { orderId } = req.body
+    const result = await sendPushToOrder(orderId || 999, {
+      title: '🔔 Test Notifikasi Nexa Order',
+      body: 'Notifikasi berhasil! Pesananmu sedang diproses.',
+      icon: '/favicon.svg',
+      orderId: orderId || 999,
+      url: '/',
+    })
+    res.json({ success: true, ...result })
+  } catch (e) {
+    res.status(500).json({ error: e.message })
+  }
+})
+
 // POST /api/push/subscribe — customer subscribe, simpan subscription
 router.post('/subscribe', async (req, res) => {
   try {

@@ -6,6 +6,7 @@ import { ArrowLeft, User, CheckCircle2, Wallet, QrCode, ShoppingBag } from 'luci
 import { formatRupiah } from '@/lib/utils';
 import { setCustomerProfile, clearCustomerCart, setCustomerOrderId } from '@/features/customer/store/customerSlice';
 import api from '@/lib/api';
+import { subscribePush, isPushSupported } from '@/lib/pushNotification';
 
 const CheckoutPage: React.FC = () => {
   const navigate = useNavigate();
@@ -60,7 +61,12 @@ const CheckoutPage: React.FC = () => {
         method: paymentMethod,
       });
 
-      // 3. Simpan state
+      // 3. Subscribe push notification untuk tracking status
+      if (isPushSupported()) {
+        subscribePush(parseInt(orderId)).catch(() => {}) // silent fail
+      }
+
+      // 4. Simpan state
       dispatch(setCustomerProfile({ name, phone }));
       dispatch(setCustomerOrderId(orderId));
 

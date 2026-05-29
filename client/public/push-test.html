@@ -1,0 +1,126 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Push Notification Test</title>
+  <style>
+    body { font-family: sans-serif; padding: 20px; max-width: 500px; margin: 0 auto; }
+    button { padding: 12px 20px; margin: 8px 0; width: 100%; font-size: 16px; border-radius: 8px; border: none; cursor: pointer; }
+    .btn-primary { background: #0A3464; color: white; }
+    .btn-success { background: #22c55e; color: white; }
+    .btn-danger { background: #ef4444; color: white; }
+    .log { background: #f1f5f9; padding: 12px; border-radius: 8px; margin: 8px 0; font-size: 13px; white-space: pre-wrap; word-break: break-all; }
+    .ok { color: #16a34a; font-weight: bold; }
+    .err { color: #dc2626; font-weight: bold; }
+    .info { color: #2563eb; }
+  </style>
+</head>
+<body>
+  <h2>🔔 Push Notification Debug</h2>
+  <div id="status" class="log">Klik "Cek Support" untuk mulai...</div>
+
+  <button class="btn-primary" onclick="checkSupport()">1. Cek Support Browser</button>
+  <button class="btn-primary" onclick="registerSW()">2. Register Service Worker</button>
+  <button class="btn-success" onclick="subscribe()">3. Subscribe Push</button>
+  <button class="btn-danger" onclick="testSend()">4. Test Kirim Notifikasi</button>
+  <button onclick="checkDB()">5. Cek Subscription di DB</button>
+
+  <script>
+    const API = 'https://nexaorder-api.vercel.app/api'
+    const log = (msg, type='info') => {
+      const el = document.getElementById('status')
+      el.innerHTML += `\n<span class="${type}">${msg}</span>`
+      console.log(msg)
+    }
+
+    function checkSupport() {
+      document.getElementById('status').innerHTML = '<b>Hasil Cek:</b>'
+      log('serviceWorker: ' + ('serviceWorker' in navigator ? '✅' : '❌'), 'serviceWorker' in navigator ? 'ok' : 'err')
+      log('PushManager: ' + ('PushManager' in window ? '✅' : '❌'), 'PushManager' in window ? 'ok' : 'err')
+      log('Notification: ' + ('Notification' in window ? '✅' : '❌'), 'Notification' in window ? 'ok' : 'err')
+      log('Permission: ' + Notification.permission, Notification.permission === 'granted' ? 'ok' : 'info')
+      log('HTTPS: ' + (location.protocol === 'https:' ? '✅' : '❌ (butuh HTTPS)'), location.protocol === 'https:' ? 'ok' : 'err')
+      log('URL: ' + location.href, 'info')
+    }
+
+    async function registerSW() {
+      try {
+        const reg = await navigator.serviceWorker.register('/sw.js')
+        log('✅ SW registered: ' + reg.scope, 'ok')
+        const state = reg.active ? 'active' : reg.installing ? 'installing' : reg.waiting ? 'waiting' : 'unknown'
+        log('SW state: ' + state, 'info')
+      } catch(e) {
+        log('❌ SW error: ' + e.message, 'err')
+      }
+    }
+
+    async function subscribe() {
+      try {
+        const perm = await Notification.requestPermission()
+        log('Permission: ' + perm, perm === 'granted' ? 'ok' : 'err')
+        if (perm !== 'granted') return
+
+        const reg = await navigator.serviceWorker.ready
+        log('SW ready ✅', 'ok')
+
+        const res = await fetch(API + '/push/vapid-public-key')
+        const { publicKey } = await res.json()
+        log('VAPID key: ' + publicKey.substring(0, 20) + '...', 'ok')
+
+        const sub = await reg.pushManager.subscribe({
+          userVisibleOnly: true,
+          applicationServerKey: urlBase64ToUint8Array(publicKey)
+        })
+        log('✅ Subscribed!', 'ok')
+        log('Endpoint: ' + sub.endpoint.substring(0, 60) + '...', 'info')
+
+        // Simpan ke server dengan orderId=999 (test)
+        const saveRes = await fetch(API + '/push/subscribe', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ subscription: sub.toJSON(), orderId: 999 })
+        })
+        const saveData = await saveRes.json()
+        log('Save result: ' + JSON.stringify(saveData), saveRes.ok ? 'ok' : 'err')
+      } catch(e) {
+        log('❌ Error: ' + e.message, 'err')
+      }
+    }
+
+    async function testSend() {
+      try {
+        // Kirim test notif via server
+        const res = await fetch(API + '/push/test', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ orderId: 999 })
+        })
+        const data = await res.json()
+        log('Test send: ' + JSON.stringify(data), res.ok ? 'ok' : 'err')
+      } catch(e) {
+        log('❌ Error: ' + e.message, 'err')
+      }
+    }
+
+    async function checkDB() {
+      try {
+        const res = await fetch(API + '/push/debug-subs')
+        const data = await res.json()
+        log('DB subs: ' + JSON.stringify(data), 'info')
+      } catch(e) {
+        log('❌ Error: ' + e.message, 'err')
+      }
+    }
+
+    function urlBase64ToUint8Array(base64String) {
+      const padding = '='.repeat((4 - base64String.length % 4) % 4)
+      const base64 = (base64String + padding).replace(/-/g, '+').replace(/_/g, '/')
+      const rawData = window.atob(base64)
+      const outputArray = new Uint8Array(rawData.length)
+      for (let i = 0; i < rawData.length; ++i) outputArray[i] = rawData.charCodeAt(i)
+      return outputArray
+    }
+  </script>
+</body>
+</html>

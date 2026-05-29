@@ -2,9 +2,10 @@ import React, { useEffect, useState, useCallback } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { useSelector } from 'react-redux';
 import { RootState } from '@/store';
-import { CheckCircle2, Clock, ChefHat, Utensils, Receipt } from 'lucide-react';
+import { CheckCircle2, Clock, ChefHat, Utensils, Receipt, Bell } from 'lucide-react';
 import { formatRupiah } from '@/lib/utils';
 import api from '@/lib/api';
+import { subscribePush, isPushSupported } from '@/lib/pushNotification';
 
 interface OrderData {
   id: number;
@@ -32,6 +33,8 @@ const OrderStatusPage: React.FC = () => {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
   const [isLoaded, setIsLoaded] = useState(false);
+  const [pushEnabled, setPushEnabled] = useState(false);
+  const [pushLoading, setPushLoading] = useState(false);
 
   const fetchOrder = useCallback(async () => {
     try {
@@ -49,6 +52,13 @@ const OrderStatusPage: React.FC = () => {
     fetchOrder();
     setIsLoaded(true);
 
+    // Cek apakah sudah subscribe push
+    if (isPushSupported() && 'serviceWorker' in navigator) {
+      navigator.serviceWorker.getRegistration('/sw.js').then(reg => {
+        if (reg) reg.pushManager.getSubscription().then(sub => setPushEnabled(!!sub));
+      });
+    }
+
     // Polling setiap 5 detik
     const interval = setInterval(() => {
       fetchOrder();
@@ -63,6 +73,14 @@ const OrderStatusPage: React.FC = () => {
       // Tidak perlu stop interval karena sudah di-cleanup di useEffect atas
     }
   }, [order?.status]);
+
+  const handleEnablePush = async () => {
+    if (!orderId) return;
+    setPushLoading(true);
+    const success = await subscribePush(parseInt(orderId));
+    setPushEnabled(success);
+    setPushLoading(false);
+  };
 
   const handleOrderMore = () => {
     setIsLoaded(false);
@@ -164,6 +182,38 @@ const OrderStatusPage: React.FC = () => {
               </p>
             </div>
           </div>
+
+          {/* Tombol aktifkan notifikasi */}
+          {isPushSupported() && order.status !== 'DONE' && (
+            <div className="bg-white rounded-3xl p-5 shadow-sm border border-slate-100">
+              {pushEnabled ? (
+                <div className="flex items-center gap-3 text-green-600">
+                  <Bell className="w-5 h-5 shrink-0" />
+                  <div>
+                    <p className="font-bold text-sm">Notifikasi Aktif</p>
+                    <p className="text-xs text-slate-500">Kamu akan dapat notifikasi saat pesanan siap</p>
+                  </div>
+                </div>
+              ) : (
+                <div className="flex items-center justify-between gap-3">
+                  <div className="flex items-center gap-3">
+                    <Bell className="w-5 h-5 text-brand-secondary shrink-0" />
+                    <div>
+                      <p className="font-bold text-sm text-slate-800">Aktifkan Notifikasi</p>
+                      <p className="text-xs text-slate-500">Dapat notif saat pesanan siap, meski HP terkunci</p>
+                    </div>
+                  </div>
+                  <button
+                    onClick={handleEnablePush}
+                    disabled={pushLoading}
+                    className="bg-brand-secondary text-white text-xs font-bold px-4 py-2 rounded-xl shrink-0 disabled:opacity-50"
+                  >
+                    {pushLoading ? '...' : 'Aktifkan'}
+                  </button>
+                </div>
+              )}
+            </div>
+          )}
 
           {/* Rincian Pesanan */}
           <div className="bg-white rounded-3xl p-6 shadow-sm border border-slate-100">
