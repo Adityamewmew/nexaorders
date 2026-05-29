@@ -1,6 +1,6 @@
-import { useState } from "react";
+import { useState, useRef } from "react";
 import { useNavigate } from "react-router-dom";
-import { ChevronLeft, ImagePlus, Eye, EyeOff, Info, Save, Loader2 } from "lucide-react";
+import { ChevronLeft, ImagePlus, Eye, EyeOff, Info, Save, Loader2, X } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { useToast } from "@/contexts/ToastContext";
 import api from "@/lib/api";
@@ -8,17 +8,38 @@ import api from "@/lib/api";
 export default function StaffForm() {
   const navigate = useNavigate();
   const { showToast } = useToast();
+  const fileInputRef = useRef<HTMLInputElement>(null);
   const [formData, setFormData] = useState({
     username: "",
     name: "",
     password: "",
     confirmPassword: "",
     role: "CASHIER",
-    isActive: true
+    isActive: true,
+    photo: "",
   });
   const [showPassword, setShowPassword] = useState(false);
   const [showConfirmPassword, setShowConfirmPassword] = useState(false);
   const [loading, setLoading] = useState(false);
+  const [uploading, setUploading] = useState(false);
+
+  const handlePhotoUpload = async (file: File) => {
+    const allowed = ["image/jpeg", "image/png", "image/webp"];
+    if (!allowed.includes(file.type)) { showToast("Format tidak didukung. Gunakan JPG, PNG, atau WebP.", "error"); return; }
+    if (file.size > 2 * 1024 * 1024) { showToast("Ukuran file maksimal 2MB.", "error"); return; }
+    setUploading(true);
+    try {
+      const fd = new FormData();
+      fd.append("image", file);
+      const res = await api.post("/upload", fd, { headers: { "Content-Type": "multipart/form-data" } });
+      setFormData(prev => ({ ...prev, photo: `http://localhost:5000${res.data.url}` }));
+      showToast("Foto berhasil diupload!", "success");
+    } catch {
+      showToast("Gagal mengupload foto.", "error");
+    } finally {
+      setUploading(false);
+    }
+  };
 
   const handleSave = async () => {
     if (!formData.username.trim() || !formData.name.trim() || !formData.password) {
@@ -41,6 +62,7 @@ export default function StaffForm() {
         name: formData.name.trim(),
         password: formData.password,
         role: formData.role,
+        photo: formData.photo || null,
       });
       showToast("Akun kasir berhasil ditambahkan!", "success");
       navigate("/merchant/staff");
@@ -180,14 +202,44 @@ export default function StaffForm() {
 
             <div>
               <label className="text-sm font-bold text-slate-800 mb-2 block">Foto Profil Kasir</label>
-              <div className="w-full aspect-[2/1] border-2 border-dashed border-slate-300 bg-slate-50/50 rounded-2xl flex flex-col items-center justify-center p-6 text-center hover:bg-slate-50 transition-colors cursor-pointer group">
-                <div className="w-12 h-12 bg-white rounded-full shadow-sm flex items-center justify-center mb-3 group-hover:scale-110 transition-transform">
-                  <ImagePlus className="w-5 h-5 text-slate-400 group-hover:text-brand-secondary transition-colors" />
-                </div>
-                <h4 className="font-bold text-slate-700 text-sm mb-1">Upload Foto</h4>
-                <p className="text-[10px] text-slate-400 uppercase tracking-wider">
-                  Format: JPG, PNG (Max. 1MB)
-                </p>
+              <input
+                ref={fileInputRef}
+                type="file"
+                accept="image/jpeg,image/png,image/webp"
+                className="hidden"
+                onChange={e => { const f = e.target.files?.[0]; if (f) handlePhotoUpload(f); }}
+              />
+              <div
+                onClick={() => !uploading && fileInputRef.current?.click()}
+                className="w-full aspect-[2/1] border-2 border-dashed border-slate-300 bg-slate-50/50 rounded-2xl flex flex-col items-center justify-center p-6 text-center hover:bg-slate-50 transition-colors cursor-pointer group relative overflow-hidden"
+              >
+                {formData.photo ? (
+                  <>
+                    <img src={formData.photo} alt="foto kasir" className="absolute inset-0 w-full h-full object-cover rounded-2xl" />
+                    <div className="absolute inset-0 bg-black/30 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center gap-2">
+                      <span className="text-white text-xs font-semibold bg-black/50 px-3 py-1.5 rounded-full">Ganti Foto</span>
+                      <button
+                        onClick={e => { e.stopPropagation(); setFormData(prev => ({ ...prev, photo: "" })); }}
+                        className="bg-red-500/80 text-white p-1.5 rounded-full hover:bg-red-600"
+                      >
+                        <X className="w-3 h-3" />
+                      </button>
+                    </div>
+                  </>
+                ) : uploading ? (
+                  <div className="flex flex-col items-center gap-2">
+                    <Loader2 className="w-8 h-8 text-brand-secondary animate-spin" />
+                    <p className="text-xs text-brand-secondary font-semibold">Mengupload...</p>
+                  </div>
+                ) : (
+                  <>
+                    <div className="w-12 h-12 bg-white rounded-full shadow-sm flex items-center justify-center mb-3 group-hover:scale-110 transition-transform">
+                      <ImagePlus className="w-5 h-5 text-slate-400 group-hover:text-brand-secondary transition-colors" />
+                    </div>
+                    <h4 className="font-bold text-slate-700 text-sm mb-1">Upload Foto</h4>
+                    <p className="text-[10px] text-slate-400 uppercase tracking-wider">JPG, PNG, WebP (Maks. 2MB)</p>
+                  </>
+                )}
               </div>
             </div>
 

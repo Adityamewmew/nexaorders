@@ -26,6 +26,24 @@ export default function MerchantLayout() {
 
   // Poll pesanan PENDING setiap 15 detik untuk badge notifikasi real-time
   useEffect(() => {
+    let prevCount = 0;
+
+    const playBeep = () => {
+      try {
+        const ctx = new (window.AudioContext || (window as unknown as { webkitAudioContext: typeof AudioContext }).webkitAudioContext)();
+        const osc = ctx.createOscillator();
+        const gain = ctx.createGain();
+        osc.connect(gain);
+        gain.connect(ctx.destination);
+        osc.frequency.value = 880;
+        osc.type = "sine";
+        gain.gain.setValueAtTime(0.3, ctx.currentTime);
+        gain.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + 0.4);
+        osc.start(ctx.currentTime);
+        osc.stop(ctx.currentTime + 0.4);
+      } catch { /* silent */ }
+    };
+
     const fetchPendingCount = async () => {
       try {
         const token = localStorage.getItem('nexa_token');
@@ -35,7 +53,8 @@ export default function MerchantLayout() {
         });
         if (res.ok) {
           const data = await res.json();
-          // Update Redux orders dengan data terbaru
+          if (data.length > prevCount) playBeep();
+          prevCount = data.length;
           dispatch({ type: 'orders/setItems', payload: data });
         }
       } catch { /* silent fail */ }

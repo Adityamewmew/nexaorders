@@ -1,6 +1,8 @@
-import { ImagePlus, AlertCircle, ArrowRight } from "lucide-react";
+import { ImagePlus, AlertCircle, ArrowRight, Loader2, X } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { useNavigate } from "react-router-dom";
+import { useRef, useState } from "react";
+import api from "@/lib/api";
 
 interface MenuBasicInfoProps {
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
@@ -13,6 +15,30 @@ interface MenuBasicInfoProps {
 
 export default function MenuBasicInfo({ formData, categories, handleInputChange, handleToggleAvailability, onNext }: MenuBasicInfoProps) {
   const navigate = useNavigate();
+  const fileInputRef = useRef<HTMLInputElement>(null);
+  const [uploading, setUploading] = useState(false);
+  const [uploadError, setUploadError] = useState("");
+
+  const handleImageUpload = async (file: File) => {
+    const allowed = ["image/jpeg", "image/png", "image/webp"];
+    if (!allowed.includes(file.type)) { setUploadError("Format tidak didukung. Gunakan JPG, PNG, atau WebP."); return; }
+    if (file.size > 2 * 1024 * 1024) { setUploadError("Ukuran file maksimal 2MB."); return; }
+
+    setUploadError("");
+    setUploading(true);
+    try {
+      const fd = new FormData();
+      fd.append("image", file);
+      const res = await api.post("/upload", fd, { headers: { "Content-Type": "multipart/form-data" } });
+      const url = `http://localhost:5000${res.data.url}`;
+      // Trigger handleInputChange dengan synthetic event
+      handleInputChange({ target: { name: "imageUrl", value: url } } as React.ChangeEvent<HTMLInputElement>);
+    } catch {
+      setUploadError("Gagal mengupload gambar. Coba lagi.");
+    } finally {
+      setUploading(false);
+    }
+  };
 
   return (
     <div className="bg-white rounded-2xl border-2 border-brand-secondary/30 shadow-sm overflow-hidden flex flex-col">
@@ -21,16 +47,48 @@ export default function MenuBasicInfo({ formData, categories, handleInputChange,
         {/* Sisi Kiri: Upload Foto */}
         <div className="md:col-span-4 flex flex-col">
           <label className="text-xs font-bold text-slate-500 uppercase tracking-wider mb-3">Foto Menu</label>
-          <div className="flex-1 min-h-[250px] border-2 border-dashed border-slate-300 bg-slate-50/50 rounded-2xl flex flex-col items-center justify-center p-6 text-center hover:bg-slate-50 transition-colors cursor-pointer group">
-            <div className="w-14 h-14 bg-white rounded-full shadow-sm flex items-center justify-center mb-4 group-hover:scale-110 transition-transform">
-              <ImagePlus className="w-6 h-6 text-brand-secondary" />
-            </div>
-            <h4 className="font-bold text-slate-700 mb-1">Drag & Drop Image</h4>
-            <p className="text-xs text-slate-400 leading-relaxed">
-              Format: JPG, PNG (Max. 1MB).<br />
-              Rekomendasi rasio 1:1 untuk tampilan terbaik.
-            </p>
+          <input
+            ref={fileInputRef}
+            type="file"
+            accept="image/jpeg,image/png,image/webp"
+            className="hidden"
+            onChange={e => { const f = e.target.files?.[0]; if (f) handleImageUpload(f); }}
+          />
+          <div
+            onClick={() => !uploading && fileInputRef.current?.click()}
+            onDragOver={e => e.preventDefault()}
+            onDrop={e => { e.preventDefault(); const f = e.dataTransfer.files[0]; if (f) handleImageUpload(f); }}
+            className="flex-1 min-h-[250px] border-2 border-dashed border-slate-300 bg-slate-50/50 rounded-2xl flex flex-col items-center justify-center p-6 text-center hover:bg-slate-50 transition-colors cursor-pointer group relative overflow-hidden"
+          >
+            {formData.imageUrl ? (
+              <>
+                <img src={formData.imageUrl} alt="preview" className="absolute inset-0 w-full h-full object-cover rounded-2xl" />
+                <div className="absolute inset-0 bg-black/30 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center gap-2">
+                  <span className="text-white text-xs font-semibold bg-black/50 px-3 py-1.5 rounded-full">Ganti Gambar</span>
+                  <button
+                    onClick={e => { e.stopPropagation(); handleInputChange({ target: { name: "imageUrl", value: "" } } as React.ChangeEvent<HTMLInputElement>); }}
+                    className="bg-red-500/80 text-white p-1.5 rounded-full hover:bg-red-600"
+                  >
+                    <X className="w-3 h-3" />
+                  </button>
+                </div>
+              </>
+            ) : uploading ? (
+              <div className="flex flex-col items-center gap-2">
+                <Loader2 className="w-8 h-8 text-brand-secondary animate-spin" />
+                <p className="text-xs text-brand-secondary font-semibold">Mengupload...</p>
+              </div>
+            ) : (
+              <>
+                <div className="w-14 h-14 bg-white rounded-full shadow-sm flex items-center justify-center mb-4 group-hover:scale-110 transition-transform">
+                  <ImagePlus className="w-6 h-6 text-brand-secondary" />
+                </div>
+                <h4 className="font-bold text-slate-700 mb-1">Drag & Drop atau Klik</h4>
+                <p className="text-xs text-slate-400 leading-relaxed">JPG, PNG, WebP (Maks. 2MB)</p>
+              </>
+            )}
           </div>
+          {uploadError && <p className="text-red-500 text-xs mt-1">{uploadError}</p>}
         </div>
 
         {/* Sisi Kanan: Input Fields */}

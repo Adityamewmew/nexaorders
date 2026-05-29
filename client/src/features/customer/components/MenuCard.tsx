@@ -19,7 +19,18 @@ const MenuCard: React.FC<MenuCardProps> = ({ name, price, imageUrl, isAvailable,
     >
       {/* Gambar */}
       <div className="h-28 w-full bg-slate-200 relative">
-        <img src={imageUrl} alt={name} className="w-full h-full object-cover" />
+        {imageUrl ? (
+          <img
+            src={imageUrl}
+            alt={name}
+            className="w-full h-full object-cover"
+            onError={e => { (e.target as HTMLImageElement).style.display = 'none'; }}
+          />
+        ) : (
+          <div className="w-full h-full flex items-center justify-center bg-gradient-to-br from-slate-100 to-slate-200">
+            <span className="text-3xl">🍽️</span>
+          </div>
+        )}
         
         {/* Overlay Habis */}
         {!isAvailable && (
