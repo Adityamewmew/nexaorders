@@ -1,21 +1,46 @@
 import { useState } from "react";
-import { Lock, EyeOff, Eye, ShieldCheck } from "lucide-react";
+import { Lock, EyeOff, Eye, ShieldCheck, Loader2 } from "lucide-react";
+import { useToast } from "@/contexts/ToastContext";
+import api from "@/lib/api";
 
 export default function SecurityProfileForm() {
+  const { showToast } = useToast();
   const [showPassword, setShowPassword] = useState({ old: false, new: false, confirm: false });
   const [securityData, setSecurityData] = useState({
     oldPassword: "",
     newPassword: "",
     confirmPassword: ""
   });
+  const [loading, setLoading] = useState(false);
 
-  const handleSaveSecurity = () => {
-    if (securityData.newPassword !== securityData.confirmPassword) {
-      alert("Password baru dan konfirmasi tidak cocok!");
+  const handleSaveSecurity = async () => {
+    if (!securityData.oldPassword || !securityData.newPassword || !securityData.confirmPassword) {
+      showToast("Semua field wajib diisi", "error");
       return;
     }
-    alert("Password berhasil diubah!");
-    setSecurityData({ oldPassword: "", newPassword: "", confirmPassword: "" });
+    if (securityData.newPassword !== securityData.confirmPassword) {
+      showToast("Password baru dan konfirmasi tidak cocok!", "error");
+      return;
+    }
+    if (securityData.newPassword.length < 6) {
+      showToast("Password baru minimal 6 karakter", "error");
+      return;
+    }
+
+    setLoading(true);
+    try {
+      await api.patch("/auth/change-password", {
+        oldPassword: securityData.oldPassword,
+        newPassword: securityData.newPassword,
+      });
+      showToast("Password berhasil diubah!", "success");
+      setSecurityData({ oldPassword: "", newPassword: "", confirmPassword: "" });
+    } catch (err: unknown) {
+      const error = err as { response?: { data?: { error?: string } } };
+      showToast(error.response?.data?.error || "Gagal mengubah password", "error");
+    } finally {
+      setLoading(false);
+    }
   };
 
   return (
@@ -41,11 +66,7 @@ export default function SecurityProfileForm() {
               placeholder="••••••••"
               className="w-full px-4 py-3 bg-slate-50 border border-slate-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-brand-primary/20 focus:border-brand-primary"
             />
-            <button 
-              type="button"
-              onClick={() => setShowPassword(p => ({...p, old: !p.old}))}
-              className="absolute inset-y-0 right-0 pr-4 flex items-center text-slate-400 hover:text-slate-600"
-            >
+            <button type="button" onClick={() => setShowPassword(p => ({...p, old: !p.old}))} className="absolute inset-y-0 right-0 pr-4 flex items-center text-slate-400 hover:text-slate-600">
               {showPassword.old ? <EyeOff className="w-5 h-5" /> : <Eye className="w-5 h-5" />}
             </button>
           </div>
@@ -58,14 +79,10 @@ export default function SecurityProfileForm() {
               type={showPassword.new ? "text" : "password"}
               value={securityData.newPassword}
               onChange={(e) => setSecurityData({...securityData, newPassword: e.target.value})}
-              placeholder="••••••••"
+              placeholder="Minimal 6 karakter"
               className="w-full px-4 py-3 bg-slate-50 border border-slate-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-brand-primary/20 focus:border-brand-primary"
             />
-            <button 
-              type="button"
-              onClick={() => setShowPassword(p => ({...p, new: !p.new}))}
-              className="absolute inset-y-0 right-0 pr-4 flex items-center text-slate-400 hover:text-slate-600"
-            >
+            <button type="button" onClick={() => setShowPassword(p => ({...p, new: !p.new}))} className="absolute inset-y-0 right-0 pr-4 flex items-center text-slate-400 hover:text-slate-600">
               {showPassword.new ? <EyeOff className="w-5 h-5" /> : <Eye className="w-5 h-5" />}
             </button>
           </div>
@@ -81,11 +98,7 @@ export default function SecurityProfileForm() {
               placeholder="••••••••"
               className="w-full px-4 py-3 bg-slate-50 border border-slate-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-brand-primary/20 focus:border-brand-primary"
             />
-            <button 
-              type="button"
-              onClick={() => setShowPassword(p => ({...p, confirm: !p.confirm}))}
-              className="absolute inset-y-0 right-0 pr-4 flex items-center text-slate-400 hover:text-slate-600"
-            >
+            <button type="button" onClick={() => setShowPassword(p => ({...p, confirm: !p.confirm}))} className="absolute inset-y-0 right-0 pr-4 flex items-center text-slate-400 hover:text-slate-600">
               {showPassword.confirm ? <EyeOff className="w-5 h-5" /> : <Eye className="w-5 h-5" />}
             </button>
           </div>
@@ -93,12 +106,13 @@ export default function SecurityProfileForm() {
       </div>
 
       <div className="mt-8 pt-6 border-t border-slate-100 flex justify-end">
-        <button 
+        <button
           onClick={handleSaveSecurity}
-          className="px-8 py-3 bg-brand-secondary hover:bg-brand-secondaryHover text-white font-bold rounded-xl transition-colors flex items-center gap-2 shadow-sm"
+          disabled={loading}
+          className="px-8 py-3 bg-brand-secondary hover:bg-brand-secondaryHover disabled:opacity-50 text-white font-bold rounded-xl transition-colors flex items-center gap-2 shadow-sm"
         >
-          <ShieldCheck className="w-4 h-4" />
-          Perbarui Password
+          {loading ? <Loader2 className="w-4 h-4 animate-spin" /> : <ShieldCheck className="w-4 h-4" />}
+          {loading ? "Menyimpan..." : "Perbarui Password"}
         </button>
       </div>
     </div>

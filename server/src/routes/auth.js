@@ -60,4 +60,25 @@ router.post('/register', authMiddleware, adminOnly, async (req, res) => {
   }
 })
 
+// PATCH /api/auth/change-password — user ganti password sendiri
+router.patch('/change-password', authMiddleware, async (req, res) => {
+  try {
+    const { oldPassword, newPassword } = req.body
+    if (!oldPassword || !newPassword) return res.status(400).json({ error: 'Password lama dan baru wajib diisi' })
+    if (newPassword.length < 6) return res.status(400).json({ error: 'Password baru minimal 6 karakter' })
+
+    const user = await prisma.user.findUnique({ where: { id: req.user.id } })
+    if (!user) return res.status(404).json({ error: 'User tidak ditemukan' })
+
+    const valid = await bcrypt.compare(oldPassword, user.password)
+    if (!valid) return res.status(401).json({ error: 'Password lama tidak sesuai' })
+
+    const hashed = await bcrypt.hash(newPassword, 10)
+    await prisma.user.update({ where: { id: req.user.id }, data: { password: hashed } })
+    res.json({ message: 'Password berhasil diubah' })
+  } catch (e) {
+    res.status(500).json({ error: e.message })
+  }
+})
+
 module.exports = router

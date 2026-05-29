@@ -1,4 +1,4 @@
-import { useState, useRef, useEffect } from "react";
+import { useState, useEffect } from "react";
 import { Outlet, Link, useLocation, useNavigate } from "react-router-dom";
 import { useDispatch, useSelector } from "react-redux";
 import { 
@@ -16,24 +16,34 @@ export default function MerchantLayout() {
   const navigate = useNavigate();
   const dispatch = useDispatch();
   const { user } = useSelector((state: RootState) => state.auth);
-  const pendingOrdersCount = useSelector((state: RootState) => 
+  const pendingOrdersCount = useSelector((state: RootState) =>
     state.orders.items.filter(o => o.status === 'PENDING').length
   );
-  
+
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
   const [showProfileDropdown, setShowProfileDropdown] = useState(false);
   const [isLogoutModalOpen, setIsLogoutModalOpen] = useState(false);
-  
-  // Deteksi pesanan baru untuk memainkan suara
-  const prevPendingCount = useRef(pendingOrdersCount);
+
+  // Poll pesanan PENDING setiap 15 detik untuk badge notifikasi real-time
   useEffect(() => {
-    if (pendingOrdersCount > prevPendingCount.current) {
-      // Mainkan suara notifikasi (menggunakan beep pendek bawaan browser/base64)
-      const audio = new Audio("data:audio/wav;base64,UklGRl9vT19XQVZFZm10IBAAAAABAAEAQB8AAEAfAAABAAgAZGF0YU"); // Dummy short beep
-      audio.play().catch(() => console.log("Audio autoplay prevented by browser"));
-    }
-    prevPendingCount.current = pendingOrdersCount;
-  }, [pendingOrdersCount]);
+    const fetchPendingCount = async () => {
+      try {
+        const token = localStorage.getItem('nexa_token');
+        if (!token) return;
+        const res = await fetch('http://localhost:5000/api/orders?status=PENDING', {
+          headers: { Authorization: `Bearer ${token}` }
+        });
+        if (res.ok) {
+          const data = await res.json();
+          // Update Redux orders dengan data terbaru
+          dispatch({ type: 'orders/setItems', payload: data });
+        }
+      } catch { /* silent fail */ }
+    };
+    fetchPendingCount();
+    const interval = setInterval(fetchPendingCount, 15000);
+    return () => clearInterval(interval);
+  }, [dispatch]);
 
   // Menu Khusus Merchant Admin
   const adminMenu = [

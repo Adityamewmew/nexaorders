@@ -15,8 +15,10 @@ const orderSlice = createSlice({
   initialState,
   reducers: {
     addOrder: (state, action: PayloadAction<Order>) => {
-      // Masukkan order baru ke paling atas (terbaru)
       state.items.unshift(action.payload);
+    },
+    setItems: (state, action: PayloadAction<Order[]>) => {
+      state.items = action.payload;
     },
     updateOrderStatus: (state, action: PayloadAction<{ id: string; status: OrderStatus }>) => {
       const order = state.items.find(o => o.id === action.payload.id);
@@ -33,5 +35,5 @@ const orderSlice = createSlice({
   }
 });
 
-export const { addOrder, updateOrderStatus, updatePaymentStatus } = orderSlice.actions;
+export const { addOrder, setItems, updateOrderStatus, updatePaymentStatus } = orderSlice.actions;
 export default orderSlice.reducer;

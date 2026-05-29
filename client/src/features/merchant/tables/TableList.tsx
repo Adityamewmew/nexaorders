@@ -109,7 +109,9 @@ export default function TableList() {
   };
 
   const generateCustomerUrl = (tableId: number) => {
-    return `${window.location.origin}/m/merchant/${tableId}`;
+    // Route customer: /m/:tenantId/:tableId
+    // Karena single-tenant, gunakan tableId sebagai tenantId juga
+    return `${window.location.origin}/m/1/${tableId}`;
   };
 
   if (loading) {

@@ -45,6 +45,7 @@ const CheckoutPage: React.FC = () => {
         customerName: name,
         phone: phone || null,
         items: items.map(item => ({
+          // item.id format: "123-modifiersJson" atau "123" — ambil bagian sebelum tanda "-" pertama
           productId: parseInt(item.id.split('-')[0]),
           quantity: item.qty,
           note: item.notes || null,

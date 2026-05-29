@@ -39,7 +39,7 @@ export default function TableForm() {
 
   const generateCustomerUrl = () => {
     if (!savedTableId) return "";
-    return `${window.location.origin}/m/merchant/${savedTableId}`;
+    return `${window.location.origin}/m/1/${savedTableId}`;
   };
 
   return (
