@@ -11,7 +11,8 @@
     "dev": "nodemon src/app.js",
     "seed": "node prisma/seed.js",
     "migrate": "npx prisma migrate dev",
-    "build": "npx prisma generate"
+    "build": "npx prisma generate",
+    "vercel-build": "npx prisma generate"
   },
   "dependencies": {
     "@prisma/adapter-pg": "^7.8.0",
