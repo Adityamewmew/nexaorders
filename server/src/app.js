@@ -36,13 +36,15 @@ app.use(cors({
 
 app.use(express.json({ limit: '1mb' }))
 
-// Rate limiting global — 100 req/15 menit per IP
+// Rate limiting global — lebih longgar di development
+const globalMax = process.env.NODE_ENV === 'production' ? 100 : 1000
 const globalLimiter = rateLimit({
   windowMs: 15 * 60 * 1000,
-  max: 100,
+  max: globalMax,
   standardHeaders: true,
   legacyHeaders: false,
   message: { error: 'Terlalu banyak request, coba lagi nanti' },
+  skip: (req) => process.env.NODE_ENV !== 'production' && (req.ip === '127.0.0.1' || req.ip === '::1' || req.ip === '::ffff:127.0.0.1'),
 })
 app.use(globalLimiter)
 

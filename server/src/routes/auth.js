@@ -7,13 +7,16 @@ const { authMiddleware, adminOnly } = require('../middleware/auth')
 
 const router = express.Router()
 
-// P2: Rate limiting — max 10 percobaan login per 15 menit per IP
+// Rate limiting login — lebih ketat di production
+const loginWindowMs = process.env.NODE_ENV === 'production' ? 15 * 60 * 1000 : 30 * 1000
 const loginLimiter = rateLimit({
-  windowMs: 15 * 60 * 1000,
+  windowMs: loginWindowMs,
   max: 10,
   standardHeaders: true,
   legacyHeaders: false,
-  message: { error: 'Terlalu banyak percobaan login. Coba lagi dalam 15 menit.' },
+  message: { error: 'Terlalu banyak percobaan login. Coba lagi nanti.' },
+  // Di development, skip rate limit untuk localhost
+  skip: (req) => process.env.NODE_ENV !== 'production' && (req.ip === '127.0.0.1' || req.ip === '::1' || req.ip === '::ffff:127.0.0.1'),
 })
 
 const ALLOWED_ROLES_BY_CREATOR = {
